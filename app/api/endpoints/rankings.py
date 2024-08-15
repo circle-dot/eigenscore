@@ -37,7 +37,6 @@ def calculate_scores():
     localtrust_values = {item['i'].lower() for item in localtrust}.union({item['j'].lower() for item in localtrust})
     pretrust = [r for r in pretrust if r['i'] in localtrust_values and r['v'] > 0]
     
-    print('pretrust', pretrust)
     a = EigenTrust()
     scores = a.run_eigentrust(localtrust, pretrust)
     result = pd.DataFrame(scores)
