@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from sqlalchemy import text
+from sqlalchemy import func
 
 load_dotenv() 
 router = APIRouter()
@@ -66,20 +67,22 @@ def update_ranking_table():
 
         print("Inserting new scores...")
         scores = calculate_scores()
-        print(scores)
-        for score in scores:
+
+        # Calculate rankings
+        sorted_scores = sorted(scores, key=lambda x: x['v'], reverse=True)
+        for position, score in enumerate(sorted_scores, start=1):
             address = score.get('i')
             value = score.get('v')
             if address and value is not None:
                 try:
                     db.execute(
                         text('''
-                        INSERT INTO "Ranking" (address, value) 
-                        VALUES (:address, :value)
+                        INSERT INTO "Ranking" (address, value, position) 
+                        VALUES (:address, :value, :position)
                         ON CONFLICT (address) 
-                        DO UPDATE SET value = :value
+                        DO UPDATE SET value = :value, position = :position
                         '''),
-                        {"address": address, "value": value},
+                        {"address": address, "value": value, "position": position},
                     )
                 except Exception as e:
                     print(f"Error inserting data: {e}")
@@ -91,8 +94,6 @@ def update_ranking_table():
         db.rollback()
     finally:
         db.close()
-
-
 
 
 @router.get("/")
