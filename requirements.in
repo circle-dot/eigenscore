@@ -2,3 +2,5 @@ fastapi
 uvicorn
 pandas
 openrank_sdk
+python-dotenv
+requests

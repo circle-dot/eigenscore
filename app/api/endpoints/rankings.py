@@ -2,8 +2,13 @@ from fastapi import APIRouter
 import pandas as pd
 from openrank_sdk import EigenTrust
 import requests
+import os
+from dotenv import load_dotenv
 
+load_dotenv() 
 router = APIRouter()
+base_url = os.getenv('BASE_URL')
+base_url_pretrust = os.getenv('BASE_URL_PRETRUST')
 
 def get_attestations(base_url, page=1):
     results = []
@@ -25,12 +30,10 @@ def get_attestations(base_url, page=1):
     return run(page)
 
 def calculate_scores():
-    base_url = 'https://base-sepolia.easscan.org/attestations/forSchema/0x5ee00c7a6606190e090ea17749ec77fe23338387c23c0643c4251380f37eebc3?_data=routes%2F__boundary%2Fattestations%2FforSchema%2F%24schemaUID&limit=50'
     attestations = get_attestations(base_url)
     localtrust = [{'i': r['attester'].lower(), 'j': r['recipient'].lower(), 'v': 1 } for r in attestations if r['attester'] != r['recipient']]
 
-    base_url_preturst = 'https://base-sepolia.easscan.org/attestations/forSchema/0x9075dee7661b8b445a2f0caa3fc96223b8cc2593c796c414aed93f43d022b0f9?_data=routes%2F__boundary%2Fattestations%2FforSchema%2F%24schemaUID&limit=50'
-    attestationszupass = get_attestations(base_url_preturst)
+    attestationszupass = get_attestations(base_url_pretrust)
     pretrust = [{'i': r['attester'].lower(), 'j': r['recipient'].lower(), 'v': 1 } for r in attestationszupass]
 
     # Filter pretrust
