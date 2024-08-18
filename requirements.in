@@ -4,3 +4,5 @@ pandas
 openrank_sdk
 python-dotenv
 requests
+sqlalchemy
+psycopg2
