@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Security
+from fastapi import FastAPI, Depends, HTTPException, Security, Request
 from fastapi.security.api_key import APIKeyHeader
 from starlette.status import HTTP_403_FORBIDDEN
 from app.api.endpoints import rankings
@@ -30,3 +30,14 @@ app.include_router(quarkId.router, prefix="/quarkid", tags=["quarkId"])
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Agora"}
+
+@app.post("/")
+async def submit_data(request: Request):
+    try:
+        data = await request.json()
+        if not data:  # Check if the request body is empty
+            raise HTTPException(status_code=422, detail="Request body is empty")
+        print('data', data)
+        return {"message": "Data received successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error processing request: {str(e)}")
