@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Security, Request
+from fastapi import FastAPI, Depends, HTTPException, Security, Request, WebSocket, WebSocketDisconnect
 from fastapi.security.api_key import APIKeyHeader
 from starlette.status import HTTP_403_FORBIDDEN
 from app.api.endpoints import rankings
@@ -31,13 +31,35 @@ app.include_router(quarkId.router, prefix="/quarkid", tags=["quarkId"])
 def read_root():
     return {"message": "Welcome to Agora"}
 
+# Store WebSocket connections by invitationId
+clients = {}
+
+# WebSocket endpoint
+@app.websocket("/ws/{invitation_id}")
+async def websocket_endpoint(websocket: WebSocket, invitation_id: str):
+    await websocket.accept()
+    clients[invitation_id] = websocket
+    try:
+        while True:
+            await websocket.receive_text()  # Keep connection alive
+    except WebSocketDisconnect:
+        del clients[invitation_id]
+
+# POST route to receive data
 @app.post("/")
 async def submit_data(request: Request):
     try:
         data = await request.json()
         if not data:  # Check if the request body is empty
             raise HTTPException(status_code=422, detail="Request body is empty")
-        print('data', data)
-        return {"message": "Data received successfully"}
+
+        invitation_id = data.get('invitationId')
+        if invitation_id and invitation_id in clients:
+            websocket = clients[invitation_id]
+            await websocket.send_text(f"Data received: {str(data)}")
+            return {"message": "Data sent to the WebSocket client"}
+        else:
+            raise HTTPException(status_code=404, detail="Client not connected")
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error processing request: {str(e)}")
