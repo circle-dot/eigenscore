@@ -31,35 +31,18 @@ app.include_router(quarkId.router, prefix="/quarkid", tags=["quarkId"])
 def read_root():
     return {"message": "Welcome to Agora"}
 
-# Store WebSocket connections by invitationId
-clients = {}
+# A simple in-memory store to keep track of WebSocket connections
+connected_clients = {}
 
-# WebSocket endpoint
 @app.websocket("/ws/{invitation_id}")
 async def websocket_endpoint(websocket: WebSocket, invitation_id: str):
     await websocket.accept()
-    clients[invitation_id] = websocket
+    connected_clients[invitation_id] = websocket
+
     try:
         while True:
-            await websocket.receive_text()  # Keep connection alive
+            data = await websocket.receive_text()
+            print(f"Received data from client: {data}")
     except WebSocketDisconnect:
-        del clients[invitation_id]
-
-# POST route to receive data
-@app.post("/")
-async def submit_data(request: Request):
-    try:
-        data = await request.json()
-        if not data:  # Check if the request body is empty
-            raise HTTPException(status_code=422, detail="Request body is empty")
-
-        invitation_id = data.get('invitationId')
-        if invitation_id and invitation_id in clients:
-            websocket = clients[invitation_id]
-            await websocket.send_text(f"Data received: {str(data)}")
-            return {"message": "Data sent to the WebSocket client"}
-        else:
-            raise HTTPException(status_code=404, detail="Client not connected")
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error processing request: {str(e)}")
+        del connected_clients[invitation_id]
+        print(f"Client {invitation_id} disconnected")
