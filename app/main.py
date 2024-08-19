@@ -27,22 +27,60 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
 app.include_router(rankings.router, prefix="/rankings", tags=["score"], dependencies=[Depends(get_api_key)])
 app.include_router(quarkId.router, prefix="/quarkid", tags=["quarkId"])
 
+# WebSocket Manager to handle connections
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: dict[str, WebSocket] = {}
+
+    async def connect(self, websocket: WebSocket, id: str):
+        await websocket.accept()
+        self.active_connections[id] = websocket
+
+    def disconnect(self, id: str):
+        self.active_connections.pop(id, None)
+
+    async def send_message(self, id: str, message: str):
+        if id in self.active_connections:
+            await self.active_connections[id].send_text(message)
+
+manager = ConnectionManager()
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Agora"}
 
-# A simple in-memory store to keep track of WebSocket connections
-connected_clients = {}
+@app.post("/")
+async def submit_data(request: Request):
+    try:
+        data = await request.json()
+        if not isinstance(data, dict):  # Ensure data is a dictionary
+            raise HTTPException(status_code=400, detail="Invalid data format")
 
-@app.websocket("/ws/{invitation_id}")
-async def websocket_endpoint(websocket: WebSocket, invitation_id: str):
-    await websocket.accept()
-    connected_clients[invitation_id] = websocket
+        invitation_id = data.get('invitationId')
+        verified = data.get('verified')
+        raw_data = data.get('rawData')
 
+        # Example debug print statements to check received data
+        print('invitationId:', invitation_id)
+        print('verified:', verified)
+        print('rawData:', raw_data)
+
+        # Notify WebSocket client
+        await manager.send_message(invitation_id, "Data received and processed")
+
+        return {"message": "Data received successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error processing request: {str(e)}")
+
+@app.websocket("/ws/{id}")
+async def websocket_endpoint(websocket: WebSocket, id: str):
+    await manager.connect(websocket, id)
     try:
         while True:
+            # Keep the connection alive by receiving data
             data = await websocket.receive_text()
-            print(f"Received data from client: {data}")
+            print(f"Received data from WebSocket: {data}")
     except WebSocketDisconnect:
-        del connected_clients[invitation_id]
-        print(f"Client {invitation_id} disconnected")
+        manager.disconnect(id)
+        print(f"WebSocket {id} disconnected")
+
