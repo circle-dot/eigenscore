@@ -1,8 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Security, Request, WebSocket, WebSocketDisconnect
 from fastapi.security.api_key import APIKeyHeader
 from starlette.status import HTTP_403_FORBIDDEN
-from app.api.endpoints import rankings
-from app.api.endpoints import quarkId
+from app.api.endpoints import rankings, quarkId
 import os
 from dotenv import load_dotenv
 
@@ -35,13 +34,17 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket, id: str):
         await websocket.accept()
         self.active_connections[id] = websocket
+        print(f"WebSocket {id} connected")
 
     def disconnect(self, id: str):
         self.active_connections.pop(id, None)
+        print(f"WebSocket {id} disconnected")
 
     async def send_message(self, id: str, message: str):
         if id in self.active_connections:
             await self.active_connections[id].send_text(message)
+        else:
+            print(f"WebSocket {id} not found")
 
 manager = ConnectionManager()
 
@@ -79,8 +82,9 @@ async def websocket_endpoint(websocket: WebSocket, id: str):
         while True:
             # Keep the connection alive by receiving data
             data = await websocket.receive_text()
-            print(f"Received data from WebSocket: {data}")
+            print(f"Received data from WebSocket {id}: {data}")
     except WebSocketDisconnect:
         manager.disconnect(id)
-        print(f"WebSocket {id} disconnected")
-
+    except Exception as e:
+        print(f"Error in WebSocket connection {id}: {str(e)}")
+        manager.disconnect(id)
