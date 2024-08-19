@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException, Request
+from app.utils.websocket_manager import ConnectionManager
 
 router = APIRouter()
+manager = ConnectionManager()
 
 @router.post("/")
 async def submit_data(request: Request):
@@ -9,7 +11,6 @@ async def submit_data(request: Request):
         if not isinstance(data, dict):  # Ensure data is a dictionary
             raise HTTPException(status_code=400, detail="Invalid data format")
 
-        # Extract relevant data
         invitation_id = data.get('invitationId')
         verified = data.get('verified')
         raw_data = data.get('rawData')
@@ -20,8 +21,8 @@ async def submit_data(request: Request):
         print('rawData:', raw_data)
 
         # Notify the corresponding WebSocket client if connected
-        if invitation_id in connected_clients:
-            websocket = connected_clients[invitation_id]
+        if invitation_id in manager.active_connections:
+            websocket = manager.active_connections[invitation_id]
             await websocket.send_json({"message": "Data received", "data": data})
 
         return {"message": "Data received successfully"}
