@@ -57,9 +57,7 @@ def calculate_scores():
     localtrust = [{'i': r['attester'].lower(), 'j': r['recipient'].lower(), 'v': 1 } for r in attestations if r['attester'] != r['recipient']]
 
     attestationszupass = get_attestations(base_url_pretrust)
-    if attestationszupass:
-        print("First child of attestationszupass:", attestationszupass[0])
-    
+
     pretrust = []
     for r in attestationszupass:
         # Extract subcategory and category from decodedDataJson
