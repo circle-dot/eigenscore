@@ -29,7 +29,7 @@ async def verify_origin(request: Request):
 app.include_router(rankings.router, prefix="/rankings", tags=["score"], dependencies=[Depends(get_api_key)])
 app.include_router(quarkId.router, prefix="/quarkid", tags=["quarkId"])
 
-@app.get("/", dependencies=[Depends(verify_origin)])
+@app.get("/")
 def read_root():
     return {"message": "Welcome to Agora"}
 
