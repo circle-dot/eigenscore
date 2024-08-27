@@ -112,10 +112,32 @@ def update_ranking_table():
                         {"address": address, "value": value, "position": position},
                     )
                 except Exception as e:
-                    print(f"Error inserting data: {e}")
+                    print(f"Error inserting data into Ranking: {e}")
                     db.rollback()
         db.commit()
-        print("Data updated successfully.")
+        print("Ranking data updated successfully.")
+
+        # Update the rankScore in the User table
+        print("Updating rankScore in User table...")
+        for score in sorted_scores:
+            address = score.get('i')
+            value = score.get('v')
+            if address and value is not None:
+                try:
+                    db.execute(
+                        text('''
+                        UPDATE "User"
+                        SET "rankScore" = :value
+                        WHERE LOWER("wallet") = LOWER(:address)
+                        '''),
+                        {"value": value, "address": address},
+                    )
+                except Exception as e:
+                    print(f"Error updating rankScore in User table: {e}")
+                    db.rollback()
+        db.commit()
+        print("rankScore in User table updated successfully.")
+
     except Exception as e:
         print(f"Error updating ranking table: {e}")
         db.rollback()
