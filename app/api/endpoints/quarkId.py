@@ -35,6 +35,14 @@ async def submit_data(request: Request, db: Session = Depends(get_db)):
         ticket_type = credential_subject.get('category')
         proof_value = raw_data.get('verifiableCredentials', [{}])[0].get('proof', {}).get('proofValue')
 
+
+      # Debugging logs
+        print("invitationId:", invitation_id)
+        print("holderDID:", holder_did)
+        print("credentialSubject:", credential_subject)
+        print("ticketType:", ticket_type)
+        print("proofValue:", proof_value)
+
         if not invitation_id:
             raise HTTPException(status_code=400, detail="invitationId is required")
         if not holder_did:
