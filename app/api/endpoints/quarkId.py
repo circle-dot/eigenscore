@@ -31,7 +31,8 @@ async def submit_data(request: Request, db: Session = Depends(get_db)):
         invitation_id = data.get('invitationId')
         raw_data = data.get('rawData', {})
         holder_did = raw_data.get('holderDID')
-        ticket_type = raw_data.get('credentialSubject', {}).get('category')
+        credential_subject = raw_data.get('credentialSubject', {})
+        ticket_type = credential_subject.get('category')
         proof_value = raw_data.get('verifiableCredentials', [{}])[0].get('proof', {}).get('proofValue')
 
         if not invitation_id:
