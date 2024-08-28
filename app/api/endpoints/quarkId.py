@@ -64,16 +64,15 @@ async def submit_data(request: Request, db: Session = Depends(get_db)):
         try:
             db.execute(
                 text('''
-                INSERT INTO "QuarkId" (invitationId, holderDID, ticketType, proofValue)
-                VALUES (:invitationId, :holderDID, :ticketType, :proofValue)
-                ON CONFLICT (invitationId, holderDID) 
-                DO UPDATE SET ticketType = EXCLUDED.ticketType, proofValue = EXCLUDED.proofValue
+                INSERT INTO "QuarkId" (invitationId, holderDID, ticketType, proofValue, userId)
+                VALUES (:invitationId, :holderDID, :ticketType, :proofValue, :userId)
                 '''),
                 {
                     "invitationId": invitation_id,
                     "holderDID": holder_did,
                     "ticketType": ticket_type,
-                    "proofValue": proof_value
+                    "proofValue": proof_value,
+                    "userId": invitation_id
                 }
             )
             db.commit()
