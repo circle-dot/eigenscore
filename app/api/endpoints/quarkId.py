@@ -3,6 +3,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import create_engine, text
 import os
 from dotenv import load_dotenv
+from app.utils.connection_manager import connection_manager
 
 # Load environment variables
 load_dotenv()
@@ -80,7 +81,11 @@ async def submit_data(request: Request, db: Session = Depends(get_db)):
             print("Error inserting data into QuarkId:", str(e))  # Log error
             db.rollback()
             raise HTTPException(status_code=500, detail=f"Error inserting data into QuarkId: {str(e)}")
-
+        
+        websocket = connection_manager.get_connection(invitation_id)
+        if not websocket:
+            raise HTTPException(status_code=404, detail="WebSocket connection not found")
+        await websocket.send_json({"message": "Data received", "data": data})
         return {"message": "Data received and inserted successfully"}
     except HTTPException as e:
         print(f"HTTPException: {str(e.detail)}")  # Log specific HTTP error details
