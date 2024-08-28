@@ -31,10 +31,18 @@ async def submit_data(request: Request, db: Session = Depends(get_db)):
         invitation_id = data.get('invitationId')
         raw_data = data.get('rawData', {})
         holder_did = raw_data.get('holderDID')
-        verifiable_credentials = raw_data.get('verifiableCredentials', {})
-        credential_subject = verifiable_credentials.get('credentialSubject', {})
+        verifiable_credentials = raw_data.get('verifiableCredentials', [])
+        if verifiable_credentials and isinstance(verifiable_credentials, list):
+            # Extract the first item if it exists
+            first_credential = verifiable_credentials[0]
+            credential_subject = first_credential.get('credentialSubject', {})
+            proof_value = first_credential.get('proof', {}).get('proofValue')
+        else:
+            credential_subject = {}
+            proof_value = None
+
         ticket_type = credential_subject.get('category')
-        proof_value = raw_data.get('verifiableCredentials', [{}])[0].get('proof', {}).get('proofValue')
+
 
 
       # Debugging logs
