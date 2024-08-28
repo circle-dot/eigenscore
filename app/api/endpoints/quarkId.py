@@ -43,9 +43,7 @@ async def submit_data(request: Request, db: Session = Depends(get_db)):
 
         ticket_type = credential_subject.get('category')
 
-
-
-      # Debugging logs
+        # Debugging logs
         print("invitationId:", invitation_id)
         print("holderDID:", holder_did)
         print("verifiable_credentials:", verifiable_credentials)
@@ -64,7 +62,7 @@ async def submit_data(request: Request, db: Session = Depends(get_db)):
         try:
             db.execute(
                 text('''
-                INSERT INTO "Quarkid" (invitationId, holderDID, ticketType, proofValue, userId)
+                INSERT INTO "QuarkId" ("invitationId", "holderDID", "ticketType", "proofValue", "userId")
                 VALUES (:invitationId, :holderDID, :ticketType, :proofValue, :userId)
                 '''),
                 {
