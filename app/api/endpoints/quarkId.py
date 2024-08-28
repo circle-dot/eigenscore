@@ -29,9 +29,10 @@ async def submit_data(request: Request, db: Session = Depends(get_db)):
         print("Received data:", data)  # Log received data
 
         invitation_id = data.get('invitationId')
-        holder_did = data.get('holderDID')
-        ticket_type = data.get('ticketType')
-        proof_value = data.get('proofValue')
+        raw_data = data.get('rawData', {})
+        holder_did = raw_data.get('holderDID')
+        ticket_type = raw_data.get('credentialSubject', {}).get('category')
+        proof_value = raw_data.get('verifiableCredentials', [{}])[0].get('proof', {}).get('proofValue')
 
         if not invitation_id:
             raise HTTPException(status_code=400, detail="invitationId is required")
