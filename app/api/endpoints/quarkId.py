@@ -64,7 +64,7 @@ async def submit_data(request: Request, db: Session = Depends(get_db)):
         try:
             db.execute(
                 text('''
-                INSERT INTO "Quarkid" (invitationId, holderDID, ticketType, proofValue, userId)
+                INSERT INTO "Quarkid" (invitationid, holderdid, tickettype, proofvalue, userid)
                 VALUES (:invitationId, :holderDID, :ticketType, :proofValue, :userId)
                 '''),
                 {
