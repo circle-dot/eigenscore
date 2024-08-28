@@ -42,6 +42,7 @@ async def submit_data(request: Request, db: Session = Depends(get_db)):
             proof_value = None
 
         ticket_type = credential_subject.get('category')
+        email = credential_subject.get('email')
 
         # Debugging logs
         print("invitationId:", invitation_id)
@@ -50,6 +51,7 @@ async def submit_data(request: Request, db: Session = Depends(get_db)):
         print("credentialSubject:", credential_subject)
         print("ticketType:", ticket_type)
         print("proofValue:", proof_value)
+        print("email:", email) 
 
         if not invitation_id:
             raise HTTPException(status_code=400, detail="invitationId is required")
@@ -62,14 +64,15 @@ async def submit_data(request: Request, db: Session = Depends(get_db)):
         try:
             db.execute(
                 text('''
-                INSERT INTO "pendingQuarkId" ("invitationId", "holderDID", "ticketType", "proofValue")
-                VALUES (:invitationId, :holderDID, :ticketType, :proofValue)
+                INSERT INTO "pendingQuarkId" ("invitationId", "holderDID", "ticketType", "proofValue", "email")
+                VALUES (:invitationId, :holderDID, :ticketType, :proofValue, :email)
                 '''),
                 {
                     "invitationId": invitation_id,
                     "holderDID": holder_did,
                     "ticketType": ticket_type,
                     "proofValue": proof_value,
+                    "email": email
                 }
             )
             db.commit()
