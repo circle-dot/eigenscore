@@ -149,3 +149,175 @@ def update_ranking_table():
 async def get_scores():
     update_ranking_table()
     return {"message": "Scores updated successfully"}
+
+
+# Add these new environment variables
+base_url_agora = os.getenv('BASE_URL_AGORA')
+base_url_pretrust_agora = os.getenv('BASE_URL_PRETRUST_AGORA')
+DATABASE_URL_AGORA = os.getenv('DATABASE_URL_AGORA')
+engine_agora = create_engine(DATABASE_URL_AGORA)
+AgoraSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine_agora)
+
+# Mapping of bytes32 subcategory to assigned values
+subcategory_mapping_agora = {
+    "0x4f7267616e697a65720000000000000000000000000000000000000000000000": 20,  # Organizer
+    # "0x537065616b657200000000000000000000000000000000000000000000000000": 10,  # Speaker
+}
+
+def calculate_scores_agora():
+    attestations = get_attestations(base_url_agora)
+    localtrust = [{'i': r['attester'].lower(), 'j': r['recipient'].lower(), 'v': 1 } for r in attestations if r['attester'] != r['recipient']]
+
+    attestationszupass = get_attestations(base_url_pretrust_agora)
+
+    pretrust = []
+    for r in attestationszupass:
+        decoded_data = eval(r['decodedDataJson'])
+        subcategory_bytes32 = next((item['value']['value'] for item in decoded_data if item['name'] == 'subcategory'), None)
+
+        if subcategory_bytes32:
+            v_value = subcategory_mapping.get(subcategory_bytes32, 1)  # Default to 1 if not found
+            pretrust.append({'i': r['attester'].lower(), 'j': r['recipient'].lower(), 'v': v_value })
+
+    # Filter pretrust
+    localtrust_values = {item['i'].lower() for item in localtrust}.union({item['j'].lower() for item in localtrust})
+    pretrust = [r for r in pretrust if r['i'] in localtrust_values and r['v'] > 0]
+    
+    a = EigenTrust()
+    scores = a.run_eigentrust(localtrust, pretrust)
+    
+    result = pd.DataFrame(scores).drop_duplicates(subset='i')
+
+    return result.to_dict(orient='records')
+
+@router.get("/agora")
+async def get_scores_agora():
+    db = AgoraSessionLocal()
+    try:
+        print("Deleting old data from Agora database...")
+        db.execute(text('DELETE FROM "Ranking"'))
+        db.commit()
+
+        print("Inserting new scores into Agora database...")
+        scores = calculate_scores_agora()
+
+        # Calculate rankings
+        sorted_scores = sorted(scores, key=lambda x: x['v'], reverse=True)
+        for position, score in enumerate(sorted_scores, start=1):
+            address = score.get('i')
+            value = score.get('v')
+            if address and value is not None:
+                try:
+                    db.execute(
+                        text('''
+                        INSERT INTO "Ranking" (address, value, position) 
+                        VALUES (:address, :value, :position)
+                        ON CONFLICT (address) 
+                        DO UPDATE SET value = :value, position = :position
+                        '''),
+                        {"address": address, "value": value, "position": position},
+                    )
+                except Exception as e:
+                    print(f"Error inserting data into Agora database: {e}")
+                    db.rollback()
+        db.commit()
+        print("Agora data updated successfully.")
+
+         # Update the rankScore in the User table
+        print("Updating rankScore in User table...")
+        for score in sorted_scores:
+            address = score.get('i')
+            value = score.get('v')
+            if address and value is not None:
+                try:
+                    db.execute(
+                        text('''
+                        UPDATE "User"
+                        SET "rankScore" = :value
+                        WHERE LOWER("wallet") = LOWER(:address)
+                        '''),
+                        {"value": value, "address": address},
+                    )
+                except Exception as e:
+                    print(f"Error updating rankScore in User table: {e}")
+                    db.rollback()
+        db.commit()
+        print("rankScore in User table updated successfully.")
+
+        return {"message": "Agora scores updated successfully"}
+    except Exception as e:
+        print(f"Error updating Agora ranking table: {e}")
+        db.rollback()
+        return {"error": str(e)}
+    finally:
+        db.close()
+
+# Add these new environment variables
+base_url_subroute = os.getenv('BASE_URL_SUBROUTE')
+base_url_pretrust_subroute = os.getenv('BASE_URL_PRETRUST_SUBROUTE')
+
+def calculate_scores_subroute():
+    attestations = get_attestations(base_url_subroute)
+    localtrust = [{'i': r['attester'].lower(), 'j': r['recipient'].lower(), 'v': 1 } for r in attestations if r['attester'] != r['recipient']]
+
+    attestationszupass = get_attestations(base_url_pretrust_subroute)
+
+    pretrust = []
+    for r in attestationszupass:
+        decoded_data = eval(r['decodedDataJson'])
+        subcategory_bytes32 = next((item['value']['value'] for item in decoded_data if item['name'] == 'subcategory'), None)
+
+        if subcategory_bytes32:
+            v_value = subcategory_mapping.get(subcategory_bytes32, 1)  # Default to 1 if not found
+            pretrust.append({'i': r['attester'].lower(), 'j': r['recipient'].lower(), 'v': v_value })
+
+    # Filter pretrust
+    localtrust_values = {item['i'].lower() for item in localtrust}.union({item['j'].lower() for item in localtrust})
+    pretrust = [r for r in pretrust if r['i'] in localtrust_values and r['v'] > 0]
+    
+    a = EigenTrust()
+    scores = a.run_eigentrust(localtrust, pretrust)
+    
+    result = pd.DataFrame(scores).drop_duplicates(subset='i')
+
+    return result.to_dict(orient='records')
+
+@router.get("/subroute")
+async def get_scores_subroute():
+    db = SessionLocal()
+    try:
+        print("Deleting old data...")
+        db.execute(text('DELETE FROM "Ranking"'))
+        db.commit()
+
+        print("Inserting new scores...")
+        scores = calculate_scores_subroute()
+
+        # Calculate rankings
+        sorted_scores = sorted(scores, key=lambda x: x['v'], reverse=True)
+        for position, score in enumerate(sorted_scores, start=1):
+            address = score.get('i')
+            value = score.get('v')
+            if address and value is not None:
+                try:
+                    db.execute(
+                        text('''
+                        INSERT INTO "Ranking" (address, value, position) 
+                        VALUES (:address, :value, :position)
+                        ON CONFLICT (address) 
+                        DO UPDATE SET value = :value, position = :position
+                        '''),
+                        {"address": address, "value": value, "position": position},
+                    )
+                except Exception as e:
+                    print(f"Error inserting data: {e}")
+                    db.rollback()
+        db.commit()
+        print("Data updated successfully.")
+        return {"message": "Scores updated successfully"}
+    except Exception as e:
+        print(f"Error updating ranking table: {e}")
+        db.rollback()
+        return {"error": str(e)}
+    finally:
+        db.close()
