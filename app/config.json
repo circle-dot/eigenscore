@@ -1,7 +1,6 @@
 {
   "CreciStamp": {
     "graphql_url": "https://zksync.easscan.org/graphql",
-    "database_url": "postgresql://postgres:postgres@localhost:5432/postgres",
     "variables": {
       "where": {
         "schemaId": {
@@ -25,7 +24,6 @@
   },
   "AgoraPass": {
     "graphql_url": "https://base-sepolia.easscan.org/graphql",
-    "database_url": "postgresql://postgres:postgres@localhost:5432/postgres",
     "variables": {
       "where": {
         "schemaId": {

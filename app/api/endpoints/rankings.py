@@ -21,10 +21,12 @@ def get_env_vars(prefix=''):
     return {
         'base_url': os.getenv(f'{prefix}BASE_URL'),
         'base_url_pretrust': os.getenv(f'{prefix}BASE_URL_PRETRUST'),
-        'database_url': os.getenv(f'{prefix}DATABASE_URL'),
+        'database_url': os.getenv(f'DATABASE_URL_{prefix.upper()}'),
     }
 
 def create_db_session(database_url):
+    if database_url is None:
+        raise ValueError("Database URL is not set in environment variables")
     engine = create_engine(database_url)
     return sessionmaker(autocommit=False, autoflush=False, bind=engine)()
 
@@ -135,15 +137,21 @@ async def get_rankings(
         return {"error": f"Invalid configuration key: {config_key}"}
     
     config = configs[config_key]
-    db = create_db_session(config['database_url'])
+    env_vars = get_env_vars(config_key)
+    
+    if env_vars['database_url'] is None:
+        return {"error": f"Database URL not found for {config_key}"}
+    
     try:
+        db = create_db_session(env_vars['database_url'])
         scores = calculate_scores(config)
         print(scores)
-        # update_ranking_table(db, scores)
-        # logger.info(f"Scores updated successfully for {config_key}")
+        update_ranking_table(db, scores)
+        logger.info(f"Scores updated successfully for {config_key}")
         return {"message": f"Scores updated successfully for {config_key}"}
     except Exception as e:
         logger.error(f"Error in get_scores for {config_key}: {e}", exc_info=True)
         return {"error": str(e)}
     finally:
-        db.close()
+        if 'db' in locals():
+            db.close()
