@@ -1,0 +1,50 @@
+{
+  "CreciStamp": {
+    "graphql_url": "https://zksync.easscan.org/graphql",
+    "database_url": "postgresql://postgres:postgres@localhost:5432/postgres",
+    "variables": {
+      "where": {
+        "schemaId": {
+          "equals": "0x5ee00c7a6606190e090ea17749ec77fe23338387c23c0643c4251380f37eebc3"
+        },
+        "decodedDataJson": {
+          "contains": "CreciStamp"
+        }
+      }
+    },
+    "pretrust_variables": {
+      "where": {
+        "decodedDataJson": {
+          "contains": "0x416c657068000000000000000000000000000000000000000000000000000000"
+        },
+        "schemaId": {
+          "equals": "0x9075dee7661b8b445a2f0caa3fc96223b8cc2593c796c414aed93f43d022b0f9"
+        }
+      }
+    }
+  },
+  "AgoraPass": {
+    "graphql_url": "https://base-sepolia.easscan.org/graphql",
+    "database_url": "postgresql://postgres:postgres@localhost:5432/postgres",
+    "variables": {
+      "where": {
+        "schemaId": {
+          "equals": "0xfbc2df315b41c1b399470f3f4e5ba5caa772a328bb75d1a20bb5dbac1e75e8e7"
+        },
+        "decodedDataJson": {
+          "contains": "0x41676f7261506173730000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    "pretrust_variables": {
+      "where": {
+        "decodedDataJson": {
+          "contains": "0x41676f7261506173730000000000000000000000000000000000000000000000"
+        },
+        "schemaId": {
+          "equals": "0xe6428e26d2e2c1a92ac3f5b30014a228940017aa3e621e9f16f02f0ecb748de9"
+        }
+      }
+    }
+  }
+}

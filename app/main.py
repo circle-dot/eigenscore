@@ -1,9 +1,9 @@
-from fastapi import FastAPI, Depends, HTTPException, Security, WebSocket, WebSocketDisconnect, Request
-from app.api.endpoints import rankings, quarkId
-from app.utils.connection_manager import connection_manager
+from fastapi import FastAPI, Depends, HTTPException, Security, Request
+from app.api.endpoints import rankings
 import os
 from dotenv import load_dotenv
 from fastapi.security.api_key import APIKeyHeader
+import json
 
 load_dotenv()
 
@@ -11,7 +11,16 @@ API_KEY = os.getenv("API_KEY")
 API_KEY_NAME = "access-token"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
-ALLOWED_ORIGINS = ["https://creci.stamp.network", "https://ferment.openvino.org"]
+# Get the directory of the current script
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# Construct the path to config.json
+config_path = os.path.join(current_dir, 'config.json')
+
+# Load configuration from JSON file
+with open(config_path) as config_file:
+    configs = json.load(config_file)
+
+ALLOWED_ORIGINS = configs.get('allowed_origins', [])
 
 app = FastAPI()
 
@@ -27,28 +36,7 @@ async def verify_origin(request: Request):
         raise HTTPException(status_code=403, detail="Origin not allowed")
 
 app.include_router(rankings.router, prefix="/rankings", tags=["score"], dependencies=[Depends(get_api_key)])
-app.include_router(quarkId.router, prefix="/quarkid", tags=["quarkId"])
 
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Agora"}
-
-@app.websocket("/ws/{invitation_id}")
-async def websocket_endpoint(websocket: WebSocket, invitation_id: str):
-    await websocket.accept()
-    origin = websocket.headers.get('origin')
-    if origin not in ALLOWED_ORIGINS:
-        await websocket.close(code=1008)  # 1008 - Policy Violation
-        return
-
-    connection_manager.add_connection(invitation_id, websocket)
-    print(f"WebSocket {invitation_id} connected")
-    try:
-        while True:
-            data = await websocket.receive_text()
-            print(f"Received data: {data}")
-            # Handle incoming data if needed
-    except WebSocketDisconnect:
-        print(f"WebSocket {invitation_id} disconnected")
-    finally:
-        connection_manager.remove_connection(invitation_id)
