@@ -44,9 +44,5 @@
         }
       }
     }
-  },
-  "allowed_origins": [
-    "https://app.stamp.network",
-    "https://staging-pass.agora.city"
-  ]
+  }
 }
